@@ -30,7 +30,7 @@ Análise exploratória, clusterização e classificação com K-NN aplicados ao 
 | Atributo | Detalhe |
 |---|---|
 | Fonte | Kaggle - Rabie El Kharoua |
-| Instâncias | ~2.149 pacientes |
+| Instâncias | 2.149 pacientes |
 | Features originais | 35 colunas |
 | Target | `Diagnosis` (0 = Sem Alzheimer, 1 = Com Alzheimer) |
 

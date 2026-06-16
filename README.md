@@ -16,15 +16,9 @@ Análise exploratória, clusterização e classificação (KNN, SVM, Árvore de 
   - [5. Medidas de Resumo](#5-medidas-de-resumo)
   - [6. Clusterização](#6-clusterização)
   - [7. Exemplo KNN Python (Implementação Manual)](#7-exemplo-knn-python-implementação-manual)
-  - [8. Classificador K-NN (sklearn)](#8-classificador-k-nn-sklearn)
-  - [9. Validação Cruzada](#9-validação-cruzada)
-  - [10. Métricas de Classificação](#10-métricas-de-classificação)
-  - [11. Exemplo KNN Python (Novo Paciente)](#11-exemplo-knn-python-novo-paciente)
-  - [12. Classificador SVM](#12-classificador-svm)
-  - [13. Outros Classificadores (Árvore, Random Forest, Regressão Logística)](#13-outros-classificadores)
-  - [14. Comparação dos Classificadores](#14-comparação-dos-classificadores)
-  - [15. Rede Neural (MLP)](#15-rede-neural-mlp)
-  - [16. Comparação Final (Rede Neural vs demais)](#16-comparação-final-rede-neural-vs-demais)
+  - [8. Classificação](#8-classificação)
+  - [9. Teste: Base Balanceada (50/50)](#9-teste-base-balanceada-5050)
+  - [10. Conclusão](#10-conclusão)
 - [Tecnologias Utilizadas](#tecnologias-utilizadas)
 - [Como Executar](#como-executar)
 
@@ -98,11 +92,8 @@ Tabela com **Amplitude**, **Desvio Padrão**, **Variância** e **Coeficiente de 
 - Visualização dos clusters projetados no PCA 2D
 - Tabela de contingência clusters × diagnóstico real
 
-#### K-Means (versão ajustada)
-Cópia da célula anterior que agrupa nas **2 componentes do PCA** (`df_pca[['PC1', 'PC2']]`) em vez de `X_scaled`. Como a clusterização e a visualização passam a ocorrer no mesmo espaço 2D, os grupos aparecem **mais fechados e separados** (a versão original agrupa em 15 dimensões, das quais o gráfico mostra apenas ~15% da variância).
-
 #### GMM (Gaussian Mixture Model)
-- `n_components=4`, `random_state=42`
+- `n_components=2`, `random_state=42`
 - Mesma estrutura de visualização e análise do K-Means
 
 ### 7. Exemplo KNN Python (Implementação Manual)
@@ -112,95 +103,41 @@ Implementação do algoritmo K-NN do zero, sem bibliotecas de ML:
 - `classifica` - votação majoritária entre os vizinhos
 - Teste com dataset sintético 2D de 10 pontos (2 classes)
 
-### 8. Classificador K-NN (sklearn)
-- Divisão **Holdout 70% treino / 30% teste** com `train_test_split`
-- `KNeighborsClassifier(n_neighbors=5)` treinado sobre `X_scaled`
-- Predição e acurácia reportadas no conjunto de teste
+### 8. Classificação
+Previsão do diagnóstico usando **todas as variáveis** do dataset — as contínuas (em escala min-max) e as **categóricas** (gênero, etnia, histórico médico e os sintomas, como *Queixas de Memória* e *Problemas Comportamentais*). Cada classificador é apresentado **individualmente**, com Holdout (70/30), Validação Cruzada estratificada (k=10), Matriz de Confusão, Acurácia, F1-Score e `classification_report`:
 
-### 9. Validação Cruzada
-- **Stratified K-Fold com k=10** (`StratifiedKFold`, `cross_val_score`)
-- Gráfico de barras com acurácia por fold e linha da média
-- Relatório de média e desvio padrão das acurácias
-
-### 10. Métricas de Classificação
-
-| Métrica | Implementação |
-|---|---|
-| Matriz de Confusão | `ConfusionMatrixDisplay` com rótulos em português |
-| Acurácia | `accuracy_score` |
-| Precisão e Revocação | `precision_score`, `recall_score` + gráfico de barras |
-| F1 Score | `f1_score` + `classification_report` completo |
-
-### 11. Exemplo KNN Python (Novo Paciente)
-Classificação de um paciente hipotético usando o modelo treinado:
-- Valores inseridos na escala min-max do dataset
-- Transformação via `StandardScaler` antes da predição
-- Output: diagnóstico previsto + probabilidade de cada classe
-
-### 12. Classificador SVM
-Classificação com **Support Vector Machine** (`SVC`, kernel RBF) sobre `X_scaled`, reproduzindo as duas estratégias de divisão usadas no K-NN:
-- **Holdout 70% treino / 30% teste** (`train_test_split`, mesmo `random_state=42`)
-- **Validação Cruzada Stratified K-Fold com k=10** (`cross_val_score`), com gráfico de acurácia por fold
-
-Métricas calculadas sobre o conjunto de teste do holdout:
-
-| Métrica | Implementação |
-|---|---|
-| Matriz de Confusão | `ConfusionMatrixDisplay` com rótulos em português |
-| Acurácia | `accuracy_score` |
-| F1 Score | `f1_score` + `classification_report` completo |
-
-### 13. Outros Classificadores
-Mais três classificadores implementados exatamente no mesmo formato do SVM (Holdout 70/30, Validação Cruzada k=10, Matriz de Confusão, Acurácia e F1 Score), todos sobre `X_scaled` com `random_state=42`:
+- **KNN** (`KNeighborsClassifier`, k=5)
+- **SVM** (`SVC`, kernel RBF)
 - **Árvore de Decisão** (`DecisionTreeClassifier`)
 - **Random Forest** (`RandomForestClassifier`)
 - **Regressão Logística** (`LogisticRegression`, `max_iter=1000`)
+- **Rede Neural** (`MLPClassifier`) — arquitetura **32 → 64 (ReLU) → 32 (ReLU) → 1 (sigmoide)**, otimizador Adam, regularização L2 `alpha=1e-4`, `early_stopping`
 
-### 14. Comparação dos Classificadores
-Avaliação lado a lado dos cinco classificadores (KNN, SVM, Árvore de Decisão, Random Forest e Regressão Logística):
-- Tabela comparativa com Acurácia (Holdout), F1 (Holdout), Acurácia Média (CV 10-Fold) e Desvio Padrão
-- Gráfico de barras agrupado comparando as métricas
-- Conclusão com a recomendação do modelo mais adequado
+Ao final, uma **Comparação Geral** (tabela + gráfico de barras):
 
 | Classificador | Acurácia (Holdout) | F1 (Holdout) | Acurácia Média (CV) | Desvio (CV) |
 |---|---|---|---|---|
-| **Random Forest** | **0.8062** | **0.6803** | **0.8353** | **0.0150** |
-| SVM (RBF) | 0.7504 | 0.6025 | 0.7878 | 0.0153 |
-| Regressão Logística | 0.7395 | 0.6147 | 0.7785 | 0.0222 |
-| Árvore de Decisão | 0.7256 | 0.6258 | 0.7571 | 0.0295 |
-| KNN (k=5) | 0.7178 | 0.5748 | 0.7315 | 0.0225 |
+| **Random Forest** | **0.9054** | **0.8635** | **0.9423** | 0.0104 |
+| Árvore de Decisão | 0.8775 | 0.8351 | 0.8939 | 0.0084 |
+| SVM (RBF) | 0.8109 | 0.7265 | 0.8455 | 0.0179 |
+| Regressão Logística | 0.8155 | 0.7419 | 0.8348 | 0.0234 |
+| Rede Neural (MLP) | 0.7907 | 0.6993 | 0.8283 | 0.0157 |
+| KNN (k=5) | 0.7132 | 0.5387 | 0.7175 | 0.0169 |
 
-**Resultado:** o **Random Forest** apresentou o melhor desempenho em todas as métricas e a maior estabilidade entre os folds, sendo o classificador recomendado para a análise.
+**Resultado:** o **Random Forest** lidera em todas as métricas (94,2% de acurácia na validação cruzada), no patamar dos trabalhos publicados com este dataset (~94–95%). Os preditores mais fortes são os indicadores funcionais e cognitivos (Avaliação Funcional, ADL, MMSE) e os sintomas relatados (Queixas de Memória, Problemas Comportamentais).
 
-### 15. Rede Neural (MLP)
-Classificação com **rede neural feedforward** (`MLPClassifier`), no mesmo formato dos demais (Holdout 70/30, Validação Cruzada k=10, Matriz de Confusão, Acurácia e F1 Score), com a arquitetura detalhada.
+### 9. Teste: Base Balanceada (50/50)
+Teste com a base **balanceada em 50/50** por *undersampling* da classe majoritária, treinando o **Random Forest** com todas as variáveis (Holdout, Validação Cruzada, Matriz de Confusão e métricas):
 
-**Arquitetura da rede:**
-
-| Camada | Neurônios | Ativação |
-|---|---|---|
-| Entrada | 15 | — |
-| Oculta 1 | 64 | ReLU |
-| Oculta 2 | 32 | ReLU |
-| Saída | 1 | Sigmoide |
-
-- **Otimizador:** Adam (`learning_rate_init=1e-3`)
-- **Regularização L2:** `alpha=1e-4` · **Lote:** `batch_size=32`
-- **Parada antecipada** (`early_stopping`, 15 épocas sem melhora; máx. 500), `random_state=42`
-- ≈ 3.137 parâmetros treináveis
-
-### 16. Comparação Final (Rede Neural vs demais)
-Tabela e gráfico comparando a Rede Neural com Random Forest, SVM, Árvore de Decisão e KNN, sob a mesma divisão Holdout 70/30 e Validação Cruzada (10-Fold):
-
-| Classificador | Acurácia (Holdout) | F1 (Holdout) | Acurácia Média (CV) | Desvio (CV) |
+| Cenário (Random Forest) | Acurácia | F1 | Revocação (Com) | CV |
 |---|---|---|---|---|
-| **Random Forest** | **0.8062** | **0.6803** | **0.8353** | 0.0150 |
-| SVM (RBF) | 0.7504 | 0.6025 | 0.7878 | 0.0153 |
-| Rede Neural (MLP) | 0.7535 | 0.6131 | 0.7850 | **0.0142** |
-| Árvore de Decisão | 0.7256 | 0.6258 | 0.7571 | 0.0295 |
-| KNN (k=5) | 0.7178 | 0.5748 | 0.7315 | 0.0225 |
+| Base original | 0.905 | 0.86 | 0.79 | 0.942 |
+| **Balanceada (50/50)** | **0.943** | **0.94** | **0.95** | 0.938 |
 
-**Resultado:** o **Random Forest** mantém o melhor desempenho geral. A **Rede Neural** é competitiva e a **mais estável** do segundo grupo (menor desvio entre os folds), empatada com o SVM — comportamento esperado em dados tabulares, onde modelos baseados em árvores costumam liderar.
+**Resultado:** o balanceamento eleva a **revocação dos casos positivos de 0,79 para 0,95**, reduzindo os falsos negativos e equilibrando o desempenho entre as classes.
+
+### 10. Conclusão
+Célula final do notebook com a **síntese acadêmica** do trabalho: o Random Forest, usando o conjunto completo de variáveis, atinge **~94% de acurácia (validação cruzada)** e é recomendado como modelo preferencial; o balanceamento de classes, avaliado experimentalmente, eleva a revocação dos positivos a **94,7%**, apontando o caminho para reduzir os falsos negativos.
 
 ---
 

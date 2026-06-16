@@ -1,6 +1,6 @@
 # Projeto Final - Alzheimer's Disease Dataset
 
-Análise exploratória, clusterização e classificação com K-NN aplicados ao [Alzheimer's Disease Dataset](https://www.kaggle.com/datasets/rabieelkharoua/alzheimers-disease-dataset), desenvolvido como projeto final da disciplina.
+Análise exploratória, clusterização e classificação (KNN, SVM, Árvore de Decisão, Random Forest, Regressão Logística e Rede Neural) aplicadas ao [Alzheimer's Disease Dataset](https://www.kaggle.com/datasets/rabieelkharoua/alzheimers-disease-dataset), desenvolvido como projeto final da disciplina.
 
 ---
 
@@ -20,6 +20,11 @@ Análise exploratória, clusterização e classificação com K-NN aplicados ao 
   - [9. Validação Cruzada](#9-validação-cruzada)
   - [10. Métricas de Classificação](#10-métricas-de-classificação)
   - [11. Exemplo KNN Python (Novo Paciente)](#11-exemplo-knn-python-novo-paciente)
+  - [12. Classificador SVM](#12-classificador-svm)
+  - [13. Outros Classificadores (Árvore, Random Forest, Regressão Logística)](#13-outros-classificadores)
+  - [14. Comparação dos Classificadores](#14-comparação-dos-classificadores)
+  - [15. Rede Neural (MLP)](#15-rede-neural-mlp)
+  - [16. Comparação Final (Rede Neural vs demais)](#16-comparação-final-rede-neural-vs-demais)
 - [Tecnologias Utilizadas](#tecnologias-utilizadas)
 - [Como Executar](#como-executar)
 
@@ -93,6 +98,9 @@ Tabela com **Amplitude**, **Desvio Padrão**, **Variância** e **Coeficiente de 
 - Visualização dos clusters projetados no PCA 2D
 - Tabela de contingência clusters × diagnóstico real
 
+#### K-Means (versão ajustada)
+Cópia da célula anterior que agrupa nas **2 componentes do PCA** (`df_pca[['PC1', 'PC2']]`) em vez de `X_scaled`. Como a clusterização e a visualização passam a ocorrer no mesmo espaço 2D, os grupos aparecem **mais fechados e separados** (a versão original agrupa em 15 dimensões, das quais o gráfico mostra apenas ~15% da variância).
+
 #### GMM (Gaussian Mixture Model)
 - `n_components=4`, `random_state=42`
 - Mesma estrutura de visualização e análise do K-Means
@@ -129,6 +137,71 @@ Classificação de um paciente hipotético usando o modelo treinado:
 - Transformação via `StandardScaler` antes da predição
 - Output: diagnóstico previsto + probabilidade de cada classe
 
+### 12. Classificador SVM
+Classificação com **Support Vector Machine** (`SVC`, kernel RBF) sobre `X_scaled`, reproduzindo as duas estratégias de divisão usadas no K-NN:
+- **Holdout 70% treino / 30% teste** (`train_test_split`, mesmo `random_state=42`)
+- **Validação Cruzada Stratified K-Fold com k=10** (`cross_val_score`), com gráfico de acurácia por fold
+
+Métricas calculadas sobre o conjunto de teste do holdout:
+
+| Métrica | Implementação |
+|---|---|
+| Matriz de Confusão | `ConfusionMatrixDisplay` com rótulos em português |
+| Acurácia | `accuracy_score` |
+| F1 Score | `f1_score` + `classification_report` completo |
+
+### 13. Outros Classificadores
+Mais três classificadores implementados exatamente no mesmo formato do SVM (Holdout 70/30, Validação Cruzada k=10, Matriz de Confusão, Acurácia e F1 Score), todos sobre `X_scaled` com `random_state=42`:
+- **Árvore de Decisão** (`DecisionTreeClassifier`)
+- **Random Forest** (`RandomForestClassifier`)
+- **Regressão Logística** (`LogisticRegression`, `max_iter=1000`)
+
+### 14. Comparação dos Classificadores
+Avaliação lado a lado dos cinco classificadores (KNN, SVM, Árvore de Decisão, Random Forest e Regressão Logística):
+- Tabela comparativa com Acurácia (Holdout), F1 (Holdout), Acurácia Média (CV 10-Fold) e Desvio Padrão
+- Gráfico de barras agrupado comparando as métricas
+- Conclusão com a recomendação do modelo mais adequado
+
+| Classificador | Acurácia (Holdout) | F1 (Holdout) | Acurácia Média (CV) | Desvio (CV) |
+|---|---|---|---|---|
+| **Random Forest** | **0.8062** | **0.6803** | **0.8353** | **0.0150** |
+| SVM (RBF) | 0.7504 | 0.6025 | 0.7878 | 0.0153 |
+| Regressão Logística | 0.7395 | 0.6147 | 0.7785 | 0.0222 |
+| Árvore de Decisão | 0.7256 | 0.6258 | 0.7571 | 0.0295 |
+| KNN (k=5) | 0.7178 | 0.5748 | 0.7315 | 0.0225 |
+
+**Resultado:** o **Random Forest** apresentou o melhor desempenho em todas as métricas e a maior estabilidade entre os folds, sendo o classificador recomendado para a análise.
+
+### 15. Rede Neural (MLP)
+Classificação com **rede neural feedforward** (`MLPClassifier`), no mesmo formato dos demais (Holdout 70/30, Validação Cruzada k=10, Matriz de Confusão, Acurácia e F1 Score), com a arquitetura detalhada.
+
+**Arquitetura da rede:**
+
+| Camada | Neurônios | Ativação |
+|---|---|---|
+| Entrada | 15 | — |
+| Oculta 1 | 64 | ReLU |
+| Oculta 2 | 32 | ReLU |
+| Saída | 1 | Sigmoide |
+
+- **Otimizador:** Adam (`learning_rate_init=1e-3`)
+- **Regularização L2:** `alpha=1e-4` · **Lote:** `batch_size=32`
+- **Parada antecipada** (`early_stopping`, 15 épocas sem melhora; máx. 500), `random_state=42`
+- ≈ 3.137 parâmetros treináveis
+
+### 16. Comparação Final (Rede Neural vs demais)
+Tabela e gráfico comparando a Rede Neural com Random Forest, SVM, Árvore de Decisão e KNN, sob a mesma divisão Holdout 70/30 e Validação Cruzada (10-Fold):
+
+| Classificador | Acurácia (Holdout) | F1 (Holdout) | Acurácia Média (CV) | Desvio (CV) |
+|---|---|---|---|---|
+| **Random Forest** | **0.8062** | **0.6803** | **0.8353** | 0.0150 |
+| SVM (RBF) | 0.7504 | 0.6025 | 0.7878 | 0.0153 |
+| Rede Neural (MLP) | 0.7535 | 0.6131 | 0.7850 | **0.0142** |
+| Árvore de Decisão | 0.7256 | 0.6258 | 0.7571 | 0.0295 |
+| KNN (k=5) | 0.7178 | 0.5748 | 0.7315 | 0.0225 |
+
+**Resultado:** o **Random Forest** mantém o melhor desempenho geral. A **Rede Neural** é competitiva e a **mais estável** do segundo grupo (menor desvio entre os folds), empatada com o SVM — comportamento esperado em dados tabulares, onde modelos baseados em árvores costumam liderar.
+
 ---
 
 ## Tecnologias Utilizadas
@@ -140,7 +213,7 @@ Classificação de um paciente hipotético usando o modelo treinado:
 | `matplotlib` / `seaborn` | Visualizações estáticas |
 | `plotly` | Visualização 3D interativa |
 | `scipy` | Distribuição normal (comparação de grupos) |
-| `scikit-learn` | PCA, StandardScaler, KNN, KMeans, GMM, métricas |
+| `scikit-learn` | PCA, StandardScaler, KMeans, GMM, KNN, SVM, Árvore de Decisão, Random Forest, Regressão Logística, Rede Neural (MLP), validação cruzada e métricas |
 
 ---
 
